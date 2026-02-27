@@ -1,0 +1,23 @@
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bs-body-bg);
+}
+
+.page-shell .card {
+  border-radius: 0.75rem;
+}
+
+.placeholder-card,
+.metric-card {
+  background-color: var(--bs-body-bg);
+}
+
+@media (max-width: 575.98px) {
+  .page-shell header {
+    margin-bottom: 1rem;
+  }
+}
