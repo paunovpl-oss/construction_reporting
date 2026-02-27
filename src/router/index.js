@@ -30,6 +30,11 @@ function render(appElement) {
   });
 
   appElement.innerHTML = renderLayout(pageView, pathState.currentPath);
+  window.dispatchEvent(
+    new CustomEvent('app:render', {
+      detail: { pathname: pathState.currentPath }
+    })
+  );
 }
 
 export function navigateTo(pathname) {

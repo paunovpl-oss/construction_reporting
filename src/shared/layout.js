@@ -37,10 +37,7 @@ export function renderLayout(content, currentPath) {
               ${navLink({ href: '/dashboard', label: 'Dashboard', currentPath })}
               ${navLink({ href: '/projects', label: 'Projects', currentPath })}
             </ul>
-            <ul class="navbar-nav">
-              ${navLink({ href: '/login', label: 'Login', currentPath })}
-              ${navLink({ href: '/register', label: 'Register', currentPath })}
-            </ul>
+            <ul class="navbar-nav" data-auth-nav></ul>
           </div>
         </div>
       </nav>
