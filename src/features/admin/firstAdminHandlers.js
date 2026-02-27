@@ -1,4 +1,5 @@
 import { navigateTo } from '../../router/index.js';
+import { hasSupabaseConfig } from '../../lib/supabaseClient.js';
 import { signInWithPassword, signUpWithPassword } from '../../services/authService.js';
 import { assignFirstAdmin, isAdminInitialized } from '../../services/rolesService.js';
 
@@ -14,6 +15,16 @@ function setMessage(element, message, variant = 'secondary') {
 async function refreshFirstAdminSection() {
   const section = document.querySelector('[data-first-admin-section]');
   if (!section) {
+    return;
+  }
+
+  if (!hasSupabaseConfig) {
+    const messageElement = section.querySelector('[data-first-admin-message]');
+    setMessage(
+      messageElement,
+      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env and restart npm run dev.',
+      'warning'
+    );
     return;
   }
 
@@ -38,48 +49,58 @@ async function handleFirstAdminSubmit(form) {
     return;
   }
 
+  if (!hasSupabaseConfig) {
+    setMessage(
+      messageElement,
+      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env and restart npm run dev.',
+      'warning'
+    );
+    return;
+  }
+
   submitButton.disabled = true;
   setMessage(messageElement, 'Creating first admin user...', 'secondary');
 
-  const signUpResult = await signUpWithPassword({ email, password, fullName: 'Admin User' });
-  if (signUpResult.error) {
-    setMessage(messageElement, signUpResult.error.message, 'danger');
-    submitButton.disabled = false;
-    return;
-  }
-
-  if (!signUpResult.data.session) {
-    const signInResult = await signInWithPassword({ email, password });
-    if (signInResult.error) {
-      setMessage(
-        messageElement,
-        'User created. Sign in manually once email confirmation is complete, then click Create Admin again.',
-        'warning'
-      );
-      submitButton.disabled = false;
+  try {
+    const signUpResult = await signUpWithPassword({ email, password, fullName: 'Admin User' });
+    if (signUpResult.error) {
+      setMessage(messageElement, signUpResult.error.message, 'danger');
       return;
     }
-  }
 
-  const adminResult = await assignFirstAdmin();
-  if (adminResult.error) {
-    setMessage(messageElement, adminResult.error.message, 'danger');
-    submitButton.disabled = false;
-    return;
-  }
+    if (!signUpResult.data.session) {
+      const signInResult = await signInWithPassword({ email, password });
+      if (signInResult.error) {
+        setMessage(
+          messageElement,
+          'User created. Sign in manually once email confirmation is complete, then click Create Admin again.',
+          'warning'
+        );
+        return;
+      }
+    }
 
-  if (!adminResult.data) {
-    setMessage(messageElement, 'Admin user is already initialized.', 'warning');
+    const adminResult = await assignFirstAdmin();
+    if (adminResult.error) {
+      setMessage(messageElement, adminResult.error.message, 'danger');
+      return;
+    }
+
+    if (!adminResult.data) {
+      setMessage(messageElement, 'Admin user is already initialized.', 'warning');
+      await refreshFirstAdminSection();
+      return;
+    }
+
+    setMessage(messageElement, 'First admin user created successfully.', 'success');
     await refreshFirstAdminSection();
+    window.dispatchEvent(new CustomEvent('admin:initialized'));
+    navigateTo('/admin');
+  } catch (error) {
+    setMessage(messageElement, error instanceof Error ? error.message : 'Unexpected error.', 'danger');
+  } finally {
     submitButton.disabled = false;
-    return;
   }
-
-  setMessage(messageElement, 'First admin user created successfully.', 'success');
-  await refreshFirstAdminSection();
-  window.dispatchEvent(new CustomEvent('admin:initialized'));
-  navigateTo('/admin');
-  submitButton.disabled = false;
 }
 
 export function initFirstAdminHandlers() {

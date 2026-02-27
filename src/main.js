@@ -4,6 +4,7 @@ import './styles/global.css';
 
 import { initAdminUsersHandlers } from './features/admin/adminUsersHandlers.js';
 import { initFirstAdminHandlers } from './features/admin/firstAdminHandlers.js';
+import { initAuthGuards } from './features/auth/authGuards.js';
 import { initAuthHandlers } from './features/auth/authHandlers.js';
 import { initAuthNav } from './features/auth/authNav.js';
 import { initProjectsHandlers } from './features/projects/projectsHandlers.js';
@@ -14,6 +15,7 @@ const appElement = document.querySelector('#app');
 
 initAdminUsersHandlers();
 initFirstAdminHandlers();
+initAuthGuards();
 initAuthHandlers();
 initAuthNav();
 initProjectsHandlers();
