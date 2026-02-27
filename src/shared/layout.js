@@ -36,6 +36,10 @@ export function renderLayout(content, currentPath) {
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               ${navLink({ href: '/dashboard', label: 'Dashboard', currentPath })}
               ${navLink({ href: '/projects', label: 'Projects', currentPath })}
+              ${navLink({ href: '/stages', label: 'Stages', currentPath })}
+              ${navLink({ href: '/estimated-quantities', label: 'Estimated Quantities', currentPath })}
+              ${navLink({ href: '/purchase-orders', label: 'Purchase Orders', currentPath })}
+              ${navLink({ href: '/delivery-notes', label: 'Delivery Notes', currentPath })}
             </ul>
             <ul class="navbar-nav" data-auth-nav></ul>
           </div>

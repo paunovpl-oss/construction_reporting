@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient.js';
+import { isCurrentUserAdmin } from '../../services/rolesService.js';
 
 function escapeHtml(value) {
   return String(value)
@@ -20,8 +21,13 @@ function renderSignedOutNav() {
   `;
 }
 
-function renderSignedInNav(userEmail) {
+function renderSignedInNav(userEmail, isAdmin) {
+  const adminLink = isAdmin
+    ? '<li class="nav-item"><a class="nav-link" href="/admin" data-link>Admin</a></li>'
+    : '';
+
   return `
+    ${adminLink}
     <li class="nav-item d-flex align-items-center me-2">
       <span class="badge text-bg-light border">${escapeHtml(userEmail)}</span>
     </li>
@@ -61,7 +67,10 @@ async function updateAuthNav() {
   }
 
   const email = data.session.user?.email || 'Signed user';
-  navElement.innerHTML = renderSignedInNav(email);
+  const userId = data.session.user?.id;
+  const adminResult = await isCurrentUserAdmin(userId);
+  const isAdmin = !adminResult.error && Boolean(adminResult.data);
+  navElement.innerHTML = renderSignedInNav(email, isAdmin);
 }
 
 export function initAuthNav() {

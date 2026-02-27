@@ -27,3 +27,8 @@ export async function getSession() {
   assertSupabaseConfig();
   return supabase.auth.getSession();
 }
+
+export async function getCurrentUser() {
+  assertSupabaseConfig();
+  return supabase.auth.getUser();
+}
