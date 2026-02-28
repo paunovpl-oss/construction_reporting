@@ -48,3 +48,23 @@ export async function deleteManagedUser(userId) {
     }
   });
 }
+
+export async function updateManagedUser({ userId, email, role, fullName, password }) {
+  assertSupabaseConfig();
+
+  const accessToken = await getAccessToken();
+
+  return supabase.functions.invoke('admin-users', {
+    body: {
+      action: 'update',
+      accessToken,
+      payload: {
+        userId,
+        email,
+        role,
+        fullName,
+        password
+      }
+    }
+  });
+}

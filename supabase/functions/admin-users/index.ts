@@ -18,6 +18,19 @@ const assignableRoles = new Set([
 
 const managerRoles = new Set(["admin", "project_manager", "site_manager"]);
 
+async function getAdminCount(adminClient: ReturnType<typeof createClient>) {
+  const rolesResult = await adminClient
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin");
+
+  if (rolesResult.error) {
+    return { count: 0, error: rolesResult.error.message };
+  }
+
+  return { count: (rolesResult.data ?? []).length, error: null };
+}
+
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -102,6 +115,7 @@ Deno.serve(async (req) => {
         users: users.map((user) => ({
           id: user.id,
           email: user.email,
+          full_name: String(user.user_metadata?.full_name ?? ""),
           created_at: user.created_at,
           role: roleMap.get(user.id) ?? "contractor"
         }))
@@ -147,6 +161,79 @@ Deno.serve(async (req) => {
         user: {
           id: newUserId,
           email: createResult.data.user.email,
+          full_name: email.split("@")[0],
+          role
+        }
+      });
+    }
+
+    if (action === "update") {
+      const userId = String(payload.userId ?? "").trim();
+      const email = String(payload.email ?? "").trim();
+      const role = String(payload.role ?? "contractor").trim();
+      const fullName = String(payload.fullName ?? "").trim();
+      const password = String(payload.password ?? "").trim();
+
+      if (!userId || !email || !role) {
+        return jsonResponse({ error: "userId, email and role are required" }, 400);
+      }
+
+      if (!assignableRoles.has(role)) {
+        return jsonResponse({ error: "Invalid role value" }, 400);
+      }
+
+      const existingRoleResult = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingRoleResult.error) {
+        return jsonResponse({ error: existingRoleResult.error.message }, 400);
+      }
+
+      const existingRole = String(existingRoleResult.data?.role ?? "contractor");
+
+      if (existingRole === "admin" && role !== "admin") {
+        const adminCountResult = await getAdminCount(adminClient);
+        if (adminCountResult.error) {
+          return jsonResponse({ error: adminCountResult.error }, 400);
+        }
+
+        if (adminCountResult.count <= 1) {
+          return jsonResponse({ error: "Cannot demote the last admin user" }, 400);
+        }
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        email,
+        user_metadata: {
+          full_name: fullName || email.split("@")[0]
+        }
+      };
+
+      if (password) {
+        updatePayload.password = password;
+      }
+
+      const updateResult = await adminClient.auth.admin.updateUserById(userId, updatePayload);
+      if (updateResult.error) {
+        return jsonResponse({ error: updateResult.error.message }, 400);
+      }
+
+      const roleUpsert = await adminClient
+        .from("user_roles")
+        .upsert({ user_id: userId, role }, { onConflict: "user_id" });
+
+      if (roleUpsert.error) {
+        return jsonResponse({ error: roleUpsert.error.message }, 400);
+      }
+
+      return jsonResponse({
+        user: {
+          id: userId,
+          email,
+          full_name: fullName || email.split("@")[0],
           role
         }
       });
@@ -160,6 +247,27 @@ Deno.serve(async (req) => {
 
       if (userId === currentUserId) {
         return jsonResponse({ error: "Admin cannot delete current signed in user" }, 400);
+      }
+
+      const targetRoleResult = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (targetRoleResult.error) {
+        return jsonResponse({ error: targetRoleResult.error.message }, 400);
+      }
+
+      if (String(targetRoleResult.data?.role ?? "") === "admin") {
+        const adminCountResult = await getAdminCount(adminClient);
+        if (adminCountResult.error) {
+          return jsonResponse({ error: adminCountResult.error }, 400);
+        }
+
+        if (adminCountResult.count <= 1) {
+          return jsonResponse({ error: "Cannot delete the last admin user" }, 400);
+        }
       }
 
       const deleteResult = await adminClient.auth.admin.deleteUser(userId);
