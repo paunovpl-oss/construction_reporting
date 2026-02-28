@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const assignableRoles = new Set([
+  "admin",
   "site_manager",
   "project_manager",
   "designer",
@@ -15,7 +16,7 @@ const assignableRoles = new Set([
   "accountant"
 ]);
 
-const managerRoles = new Set(["project_manager", "site_manager"]);
+const managerRoles = new Set(["admin", "project_manager", "site_manager"]);
 
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -40,8 +41,12 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Missing Supabase environment configuration" }, 500);
     }
 
+    const body = await req.json();
+    const accessToken = String(body?.accessToken ?? "").trim();
+
     const authHeader = req.headers.get("Authorization") ?? "";
-    const jwt = authHeader.replace("Bearer ", "").trim();
+    const headerToken = authHeader.replace("Bearer ", "").trim();
+    const jwt = accessToken || headerToken;
 
     if (!jwt) {
       return jsonResponse({ error: "Missing Authorization header" }, 401);
@@ -68,7 +73,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Admin privileges required" }, 403);
     }
 
-    const body = await req.json();
     const action = body?.action;
     const payload = body?.payload ?? {};
 

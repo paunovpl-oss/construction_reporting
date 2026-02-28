@@ -1,5 +1,6 @@
 import { createManagedUser, deleteManagedUser, listManagedUsers } from '../../services/adminUsersService.js';
-import { getCurrentUser } from '../../services/authService.js';
+import { getCurrentUser, getSession } from '../../services/authService.js';
+import { navigateTo } from '../../router/index.js';
 
 function escapeHtml(value) {
   return String(value)
@@ -17,6 +18,29 @@ function setMessage(element, message, variant = 'secondary') {
 
   element.className = `alert alert-${variant} mb-4`;
   element.textContent = message;
+}
+
+async function ensureAuthenticatedSession(messageElement) {
+  const sessionResult = await getSession();
+  const session = !sessionResult.error ? sessionResult.data?.session : null;
+
+  if (session) {
+    return true;
+  }
+
+  setMessage(messageElement, 'Your session has expired. Please sign in again.', 'warning');
+  navigateTo('/login');
+  return false;
+}
+
+function resolveEdgeFunctionError(error) {
+  const genericMessage = error?.message || 'Request failed.';
+
+  if (genericMessage.includes('non-2xx')) {
+    return 'Action failed. Ensure you are logged in as admin, then try again.';
+  }
+
+  return genericMessage;
 }
 
 function renderUsersRows(rowsElement, users, currentUserId) {
@@ -56,10 +80,16 @@ async function reloadAdminUsers() {
     return;
   }
 
+  const hasSession = await ensureAuthenticatedSession(messageElement);
+  if (!hasSession) {
+    rowsElement.innerHTML = '<tr><td colspan="4" class="text-warning">Please sign in to manage users.</td></tr>';
+    return;
+  }
+
   const [{ data: currentUserData }, listResult] = await Promise.all([getCurrentUser(), listManagedUsers()]);
 
   if (listResult.error) {
-    setMessage(messageElement, listResult.error.message, 'danger');
+    setMessage(messageElement, resolveEdgeFunctionError(listResult.error), 'danger');
     rowsElement.innerHTML = '<tr><td colspan="4" class="text-danger">Unable to load users.</td></tr>';
     return;
   }
@@ -88,9 +118,15 @@ async function handleCreateUser(form) {
   submitButton.disabled = true;
   setMessage(messageElement, 'Creating user...', 'secondary');
 
+  const hasSession = await ensureAuthenticatedSession(messageElement);
+  if (!hasSession) {
+    submitButton.disabled = false;
+    return;
+  }
+
   const result = await createManagedUser({ email, password, role });
   if (result.error) {
-    setMessage(messageElement, result.error.message, 'danger');
+    setMessage(messageElement, resolveEdgeFunctionError(result.error), 'danger');
     submitButton.disabled = false;
     return;
   }
@@ -104,11 +140,16 @@ async function handleCreateUser(form) {
 async function handleDeleteUser(userId) {
   const messageElement = document.querySelector('[data-admin-users-message]');
 
+  const hasSession = await ensureAuthenticatedSession(messageElement);
+  if (!hasSession) {
+    return;
+  }
+
   setMessage(messageElement, 'Deleting user...', 'secondary');
   const result = await deleteManagedUser(userId);
 
   if (result.error) {
-    setMessage(messageElement, result.error.message, 'danger');
+    setMessage(messageElement, resolveEdgeFunctionError(result.error), 'danger');
     return;
   }
 
