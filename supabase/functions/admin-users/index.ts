@@ -7,6 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
+const assignableRoles = new Set([
+  "site_manager",
+  "project_manager",
+  "designer",
+  "contractor",
+  "accountant"
+]);
+
+const managerRoles = new Set(["project_manager", "site_manager"]);
+
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -54,7 +64,7 @@ Deno.serve(async (req) => {
       .eq("user_id", currentUserId)
       .maybeSingle();
 
-    if (adminCheck.error || adminCheck.data?.role !== "admin") {
+    if (adminCheck.error || !managerRoles.has(String(adminCheck.data?.role ?? ""))) {
       return jsonResponse({ error: "Admin privileges required" }, 403);
     }
 
@@ -89,7 +99,7 @@ Deno.serve(async (req) => {
           id: user.id,
           email: user.email,
           created_at: user.created_at,
-          role: roleMap.get(user.id) ?? "user"
+          role: roleMap.get(user.id) ?? "contractor"
         }))
       });
     }
@@ -97,7 +107,11 @@ Deno.serve(async (req) => {
     if (action === "create") {
       const email = String(payload.email ?? "").trim();
       const password = String(payload.password ?? "").trim();
-      const role = payload.role === "admin" ? "admin" : "user";
+      const role = String(payload.role ?? "contractor");
+
+      if (!assignableRoles.has(role)) {
+        return jsonResponse({ error: "Invalid role value" }, 400);
+      }
 
       if (!email || !password) {
         return jsonResponse({ error: "Email and password are required" }, 400);

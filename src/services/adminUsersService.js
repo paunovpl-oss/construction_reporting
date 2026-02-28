@@ -7,7 +7,7 @@ export async function listManagedUsers() {
   });
 }
 
-export async function createManagedUser({ email, password, role = 'user' }) {
+export async function createManagedUser({ email, password, role = 'contractor' }) {
   assertSupabaseConfig();
   return supabase.functions.invoke('admin-users', {
     body: {

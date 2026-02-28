@@ -39,7 +39,7 @@ function renderUsersRows(rowsElement, users, currentUserId) {
       return `
         <tr>
           <td>${escapeHtml(user.email || '—')}</td>
-          <td>${escapeHtml(user.role || 'user')}</td>
+          <td>${escapeHtml(user.role || 'contractor')}</td>
           <td>${escapeHtml((user.created_at || '').slice(0, 10) || '—')}</td>
           <td class="text-end">${deleteButton}</td>
         </tr>
@@ -78,7 +78,7 @@ async function handleCreateUser(form) {
 
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
-  const role = String(formData.get('role') || 'user');
+  const role = String(formData.get('role') || 'contractor');
 
   if (!email || !password) {
     setMessage(messageElement, 'Email and password are required.', 'warning');

@@ -2,8 +2,8 @@ import { renderPageShell } from '../shared/pageShell.js';
 
 export function renderAdminUsersPage() {
   return renderPageShell({
-    title: 'Admin Dashboard',
-    description: 'Admins can create and delete application users.',
+    title: 'User Roles Dashboard',
+    description: 'Manage application users and assign MVP placeholder roles.',
     content: `
       <form class="row g-3 mb-4" data-admin-user-form autocomplete="off">
         <div class="col-12 col-md-5">
@@ -17,8 +17,11 @@ export function renderAdminUsersPage() {
         <div class="col-12 col-md-3">
           <label class="form-label">Role</label>
           <select class="form-select" name="role" required>
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="contractor">Contractor</option>
+            <option value="site_manager">Site Manager</option>
+            <option value="project_manager">Project Manager</option>
+            <option value="designer">Designer</option>
+            <option value="accountant">Accountant</option>
           </select>
         </div>
         <div class="col-12">

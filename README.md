@@ -34,6 +34,11 @@ Minimal modular multi-page app for construction works reporting.
 - `/register` Register
 - `/dashboard` Dashboard
 - `/projects` Projects list
+- `/stages` Stages
+- `/estimated-quantities` Estimated quantities
+- `/purchase-orders` Purchase orders
+- `/delivery-notes` Delivery notes
+- `/bills` Bills
 - `/projects/:id` Project details
 - `/projects/:id/admin` Project admin
 
